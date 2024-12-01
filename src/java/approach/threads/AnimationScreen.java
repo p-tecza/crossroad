@@ -15,9 +15,12 @@ public class AnimationScreen extends JPanel {
     private Graphics2D graphics;
     private final Rectangle2D.Double carRectangle;
     private final List<Car> cars;
-    public AnimationScreen() {
+
+    private final Object carObjectLock;
+    public AnimationScreen(Object carObjectLock) {
         carRectangle = new Rectangle2D.Double();
         cars = new ArrayList<>();
+        this.carObjectLock = carObjectLock;
     }
 
     public void setGraphics() {
@@ -56,7 +59,7 @@ public class AnimationScreen extends JPanel {
         Graphics2D g2d = (Graphics2D) g;
         this.setBackground(Color.GREEN);
         drawCrossroad(g2d);
-        synchronized (this) {
+        synchronized (carObjectLock) {
             for (Car c : cars) {
                 CarLocationData car = c.carLocationData;
                 g2d.setColor(c.getColor());

@@ -1,5 +1,9 @@
 package approach.threads;
 
+import approach.threads.traffic.TrafficController;
+import approach.threads.utils.Location;
+import approach.threads.utils.Spawner;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -27,8 +31,7 @@ public class FrameController {
         frame.setMinimumSize(new Dimension(800, 600));
         frame.setLayout(new GridLayout());
 
-        screen = new AnimationScreen();
-
+        screen = new AnimationScreen(Spawner.getCarObjectsLock());
 
         frame.addComponentListener(new ComponentAdapter() {
             @Override
@@ -52,16 +55,40 @@ public class FrameController {
         frame.pack();
         frame.setVisible(true);
         screen.setGraphics();
-        spawnRandomCars(1);
+        TrafficController trafficController = new TrafficController();
+        spawnRandomCars(32, trafficController);
     }
 
 
-    private void spawnRandomCars(int n){
-        while(n-- > 0){
-            Car c = new Car(screen);
-            screen.appendCar(c);
-            new Thread(c).start();
-        }
+    private void spawnRandomCars(int num, TrafficController trafficController){
+        new Thread(() -> {
+            int n = num;
+            while (n > 0) {
+                Location loc = Spawner.getLocationFromRandomLocation();
+                if (loc == null) {
+                    try {
+//                        System.out.println("LOC JEST NULL, czekamy");
+//                        Thread.sleep(new Random().nextInt(1000, 2000));
+                        Thread.sleep(800);
+//                        System.out.println("LECIMY");
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    continue;
+                }
+                System.out.println("Respię samochodzik nr." + (num - n+1));
+                Car c = new Car(screen, loc, trafficController);
+                screen.appendCar(c);
+                Thread t = new Thread(c);
+                t.start();
+                n--;
+                try {
+                    Thread.sleep(num - 4 <= n ? 250 : 1200);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
     }
 
 }

@@ -1,8 +1,8 @@
 package approach.threads.utils;
 
 public class CarLocationData {
-    private double x;
-    private double y;
+    volatile private double x;
+    volatile private double y;
     private double dx;
     private double dy;
     private int width;
