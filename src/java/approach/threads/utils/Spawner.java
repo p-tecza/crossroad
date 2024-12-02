@@ -13,7 +13,7 @@ public class Spawner {
     private static final int carHeight = 24;
     public static Map<Location, CarLocationData> mapping = new HashMap<>();
 
-    private static final Object carObjectsLock = new Object();
+//    private static final Object carObjectsLock = new Object();
     private static final Object crossroadLock = new Object();
     private static final Object roadLock = new Object();
 
@@ -24,9 +24,9 @@ public class Spawner {
         mapping.put(Location.BOT, new CarLocationData(405, 514, 0, -1, carHeight, carWidth));
     }
 
-    public static Object getCarObjectsLock() {
-        return carObjectsLock;
-    }
+//    public static Object getCarObjectsLock() {
+//        return carObjectsLock;
+//    }
 
     public static Object getCrossroadLock() {
         return crossroadLock;
@@ -70,14 +70,14 @@ public class Spawner {
     }
 
     public static void addCarToCollection(Car c) {
-        synchronized (carObjectsLock) {
+        synchronized (crossroadLock) {
             instantiatedCars.put(c.hashCode(), c);
         }
 
     }
 
     public static void removeCarFromCollection(Car c) {
-        synchronized (carObjectsLock) {
+        synchronized (crossroadLock) {
             instantiatedCars.remove(c.hashCode());
 //            System.out.println("LEFTOVER CARS SIZE: "+ instantiatedCars.size());
         }
@@ -88,7 +88,7 @@ public class Spawner {
         for (Location locationEntry : mapping.keySet()) {
             CarLocationData locationData = mapping.get(locationEntry);
             final boolean[] locationOk = {true};
-            synchronized (carObjectsLock) {
+            synchronized (crossroadLock) {
                 instantiatedCars.values().forEach(c -> {
                             if (c.getLocation() == locationEntry) {
                                 if (Math.abs(locationData.getX() - c.carLocationData.getX()) < 75 &&

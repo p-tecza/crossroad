@@ -1,5 +1,6 @@
 package approach.threads;
 
+import approach.threads.traffic.BlockedRoadHelper;
 import approach.threads.traffic.TrafficController;
 import approach.threads.utils.DriveDirection;
 import approach.threads.utils.Location;
@@ -32,7 +33,7 @@ public class FrameController {
         frame.setMinimumSize(new Dimension(800, 600));
         frame.setLayout(new GridLayout());
 
-        screen = new AnimationScreen(Spawner.getCarObjectsLock());
+        screen = new AnimationScreen(Spawner.getCrossroadLock());
 
         frame.addComponentListener(new ComponentAdapter() {
             @Override
@@ -57,11 +58,12 @@ public class FrameController {
         frame.setVisible(true);
         screen.setGraphics();
         TrafficController trafficController = new TrafficController();
-        spawnRandomCars(32, trafficController);
+        BlockedRoadHelper blockedRoadHelper = new BlockedRoadHelper(trafficController);
+        spawnRandomCars(32, trafficController, blockedRoadHelper);
     }
 
 
-    private void spawnRandomCars(int num, TrafficController trafficController){
+    private void spawnRandomCars(int num, TrafficController trafficController, BlockedRoadHelper blockedRoadHelper){
         new Thread(() -> {
             int n = num;
             int idIt = 0;
@@ -71,7 +73,7 @@ public class FrameController {
                     try {
 //                        System.out.println("LOC JEST NULL, czekamy");
 //                        Thread.sleep(new Random().nextInt(1000, 2000));
-                        Thread.sleep(800);
+                        Thread.sleep(400);
 //                        System.out.println("LECIMY");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -79,13 +81,13 @@ public class FrameController {
                     continue;
                 }
 //                System.out.println("Respię samochodzik nr." + (num - n+1));
-                Car c = new Car(screen, Spawner.getLocationFromRandomLocation(), trafficController, idIt++);
+                Car c = new Car(screen, loc, trafficController, blockedRoadHelper, idIt++);
                 screen.appendCar(c);
                 Thread t = new Thread(c);
                 t.start();
                 n--;
                 try {
-                    Thread.sleep(num - 4 <= n ? 250 : 1200);
+                    Thread.sleep(num - 4 <= n ? 125 : 600);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }

@@ -37,7 +37,7 @@ public class TrafficController {
         this.rightRoadBlockingCarsReference = new ConcurrentLinkedDeque<>();
     }
 
-    public synchronized void blockForLeftTurn(Location location, Car c) {
+    public void blockForLeftTurn(Location location, Car c) {
         synchronized (crossroadLock) {
             System.out.println(location + " BLOCKING path for left turn");
             switch (location) {
@@ -86,7 +86,7 @@ public class TrafficController {
         }
     }
 
-    public synchronized void unblockForLeftTurn(Location location, Car c) {
+    public void unblockForLeftTurn(Location location, Car c) {
         synchronized (crossroadLock) {
             System.out.println(location + " UNBLOCKING path for left turn");
             switch (location) {
@@ -135,7 +135,7 @@ public class TrafficController {
         }
     }
 
-    public synchronized void blockForGoStraight(Location location, Car c) {
+    public void blockForGoStraight(Location location, Car c) {
         synchronized (crossroadLock) {
             switch (location) {
                 case BOT -> {
@@ -175,7 +175,7 @@ public class TrafficController {
         }
     }
 
-    public synchronized void unblockForGoStraight(Location location, Car c) {
+    public void unblockForGoStraight(Location location, Car c) {
         synchronized (crossroadLock) {
             switch (location) {
                 case BOT -> {
@@ -215,7 +215,7 @@ public class TrafficController {
         }
     }
 
-    public synchronized void blockForTurnRight(Location location, Car c) {
+    public void blockForTurnRight(Location location, Car c) {
         synchronized (crossroadLock) {
             switch (location) {
                 case BOT -> {
@@ -239,7 +239,7 @@ public class TrafficController {
         }
     }
 
-    public synchronized void unblockForTurnRight(Location location, Car c) {
+    public void unblockForTurnRight(Location location, Car c) {
         synchronized (crossroadLock) {
             switch (location) {
                 case BOT -> {
@@ -263,18 +263,18 @@ public class TrafficController {
         }
     }
 
-    public synchronized Car getOccupyingRoadCarByLocation(Location l) {
-        if (!this.botRoadBlockingCarsReference.isEmpty() && l == Objects.requireNonNull(this.botRoadBlockingCarsReference.peek()).getLocation()) {
-            return botRoadBlockingCarsReference.peek();
-        } else if (!this.topRoadBlockingCarsReference.isEmpty() && l == Objects.requireNonNull(this.topRoadBlockingCarsReference.peek()).getLocation()) {
-            return this.topRoadBlockingCarsReference.peek();
-        } else if (!this.leftRoadBlockingCarsReference.isEmpty() && l == Objects.requireNonNull(this.leftRoadBlockingCarsReference.peek()).getLocation()) {
-            return this.leftRoadBlockingCarsReference.peek();
-        } else if (!this.rightRoadBlockingCarsReference.isEmpty() && l == Objects.requireNonNull(this.rightRoadBlockingCarsReference.peek()).getLocation()) {
-            return this.rightRoadBlockingCarsReference.peek();
+    public Car getOccupyingRoadCarByLocation(Location l) {
+        synchronized (crossroadLock) {
+            if (!this.botRoadBlockingCarsReference.isEmpty() && l == Objects.requireNonNull(this.botRoadBlockingCarsReference.peek()).getLocation()) {
+                return botRoadBlockingCarsReference.peek();
+            } else if (!this.topRoadBlockingCarsReference.isEmpty() && l == Objects.requireNonNull(this.topRoadBlockingCarsReference.peek()).getLocation()) {
+                return this.topRoadBlockingCarsReference.peek();
+            } else if (!this.leftRoadBlockingCarsReference.isEmpty() && l == Objects.requireNonNull(this.leftRoadBlockingCarsReference.peek()).getLocation()) {
+                return this.leftRoadBlockingCarsReference.peek();
+            } else if (!this.rightRoadBlockingCarsReference.isEmpty() && l == Objects.requireNonNull(this.rightRoadBlockingCarsReference.peek()).getLocation()) {
+                return this.rightRoadBlockingCarsReference.peek();
+            }
+            return null;
         }
-        return null;
     }
-
-
 }
