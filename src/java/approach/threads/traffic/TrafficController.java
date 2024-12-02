@@ -2,243 +2,264 @@ package approach.threads.traffic;
 
 import approach.threads.Car;
 import approach.threads.utils.Location;
+import approach.threads.utils.Spawner;
 
-import java.util.ArrayDeque;
 import java.util.Objects;
-import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentMap;
 
 public class TrafficController {
-    volatile public boolean driveLeftTurnLeftPossible;
-    volatile public boolean driveLeftTurnRightPossible;
-    volatile public boolean driveLeftGoStraightPossible;
-    volatile public boolean driveRightTurnLeftPossible;
-    volatile public boolean driveRightTurnRightPossible;
-    volatile public boolean driveRightGoStraightPossible;
-    volatile public boolean driveBotTurnLeftPossible;
-    volatile public boolean driveBotTurnRightPossible;
-    volatile public boolean driveBotGoStraightPossible;
-    volatile public boolean driveTopTurnLeftPossible;
-    volatile public boolean driveTopTurnRightPossible;
-    volatile public boolean driveTopGoStraightPossible;
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveLeftTurnLeftPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveLeftTurnRightPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveLeftGoStraightPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveRightTurnLeftPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveRightTurnRightPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveRightGoStraightPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveBotTurnLeftPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveBotTurnRightPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveBotGoStraightPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveTopTurnLeftPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveTopTurnRightPossible = new ConcurrentHashMap<>();
+    public volatile ConcurrentMap<Integer, Car> ifEmptyDriveTopGoStraightPossible = new ConcurrentHashMap<>();
 
-    volatile public ArrayDeque<Car> leftRoadBlockingCarsReference;
-    volatile public ArrayDeque<Car> rightRoadBlockingCarsReference;
-    volatile public ArrayDeque<Car> botRoadBlockingCarsReference;
-    volatile public ArrayDeque<Car> topRoadBlockingCarsReference;
+    volatile public ConcurrentLinkedDeque<Car> leftRoadBlockingCarsReference;
+    volatile public ConcurrentLinkedDeque<Car> rightRoadBlockingCarsReference;
+    volatile public ConcurrentLinkedDeque<Car> botRoadBlockingCarsReference;
+    volatile public ConcurrentLinkedDeque<Car> topRoadBlockingCarsReference;
 
-//    volatile public boolean rightWaiting;
-//    volatile public boolean leftWaiting;
-//    volatile public boolean topWaiting;
-//    volatile public boolean botWaiting;
+    private final Object crossroadLock = Spawner.getCrossroadLock();
 
     public TrafficController() {
-        this.driveLeftTurnLeftPossible = true;
-        this.driveLeftTurnRightPossible = true;
-        this.driveLeftGoStraightPossible = true;
-        this.driveRightTurnLeftPossible = true;
-        this.driveRightTurnRightPossible = true;
-        this.driveRightGoStraightPossible = true;
-        this.driveBotTurnLeftPossible = true;
-        this.driveBotTurnRightPossible = true;
-        this.driveBotGoStraightPossible = true;
-        this.driveTopTurnLeftPossible = true;
-        this.driveTopTurnRightPossible = true;
-        this.driveTopGoStraightPossible = true;
-        this.topRoadBlockingCarsReference = new ArrayDeque<>();
-        this.botRoadBlockingCarsReference = new ArrayDeque<>();
-        this.leftRoadBlockingCarsReference = new ArrayDeque<>();
-        this.rightRoadBlockingCarsReference = new ArrayDeque<>();
+        this.topRoadBlockingCarsReference = new ConcurrentLinkedDeque<>();
+        this.botRoadBlockingCarsReference = new ConcurrentLinkedDeque<>();
+        this.leftRoadBlockingCarsReference = new ConcurrentLinkedDeque<>();
+        this.rightRoadBlockingCarsReference = new ConcurrentLinkedDeque<>();
     }
 
-    public synchronized void blockForLeftTurn(Location location) {
-        switch (location) {
-            case BOT -> {
-                this.driveBotGoStraightPossible = false;
-                this.driveBotTurnRightPossible = false;
-                this.driveRightGoStraightPossible = false;
-                this.driveRightTurnLeftPossible = false;
-                this.driveLeftGoStraightPossible = false;
-                this.driveLeftTurnLeftPossible = false;
+    public synchronized void blockForLeftTurn(Location location, Car c) {
+        synchronized (crossroadLock) {
+            System.out.println(location + " BLOCKING path for left turn");
+            switch (location) {
+                case BOT -> {
+                    this.ifEmptyDriveBotGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveBotTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveBotTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnRightPossible.putIfAbsent(c.getId(), c);
+                }
+                case TOP -> {
+                    this.ifEmptyDriveTopGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
+                }
+                case LEFT -> {
+                    this.ifEmptyDriveBotGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveBotTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnRightPossible.putIfAbsent(c.getId(), c);
+                }
+                default -> { // RIGHT
+                    this.ifEmptyDriveBotGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveBotTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveBotTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopTurnLeftPossible.putIfAbsent(c.getId(), c);
+                }
             }
-            case TOP -> {
-                this.driveTopGoStraightPossible = false;
-                this.driveTopTurnRightPossible = false;
-                this.driveRightGoStraightPossible = false;
-                this.driveRightTurnLeftPossible = false;
-                this.driveLeftGoStraightPossible = false;
-                this.driveLeftTurnLeftPossible = false;
-            }
-            case LEFT -> {
-                this.driveBotGoStraightPossible = false;
-                this.driveBotTurnRightPossible = false;
-                this.driveTopGoStraightPossible = false;
-                this.driveTopTurnLeftPossible = false;
-                this.driveLeftGoStraightPossible = false;
-                this.driveLeftTurnLeftPossible = false;
-            }
-            default -> { // RIGHT
-                this.driveBotGoStraightPossible = false;
-                this.driveBotTurnRightPossible = false;
-                this.driveRightGoStraightPossible = false;
-                this.driveRightTurnLeftPossible = false;
-                this.driveTopGoStraightPossible = false;
-                this.driveTopTurnLeftPossible = false;
-            }
+            crossroadLock.notifyAll();
         }
     }
 
-    public synchronized void unblockForLeftTurn(Location location) {
-        switch (location) {
-            case BOT -> {
-                this.driveBotGoStraightPossible = true;
-                this.driveBotTurnRightPossible = true;
-                this.driveRightGoStraightPossible = true;
-                this.driveRightTurnLeftPossible = true;
-                this.driveLeftGoStraightPossible = true;
-                this.driveLeftTurnLeftPossible = true;
+    public synchronized void unblockForLeftTurn(Location location, Car c) {
+        synchronized (crossroadLock) {
+            System.out.println(location + " UNBLOCKING path for left turn");
+            switch (location) {
+                case BOT -> {
+                    this.ifEmptyDriveBotGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveBotTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveBotTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnRightPossible.remove(c.getId());
+                }
+                case TOP -> {
+                    this.ifEmptyDriveTopGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveTopTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveTopTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
+                }
+                case LEFT -> {
+                    this.ifEmptyDriveBotGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveBotTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveTopGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveTopTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveTopTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnRightPossible.remove(c.getId());
+                }
+                default -> { // RIGHT
+                    this.ifEmptyDriveBotGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveBotTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveBotTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveTopGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveTopTurnLeftPossible.remove(c.getId());
+                }
             }
-            case TOP -> {
-                this.driveTopGoStraightPossible = true;
-                this.driveTopTurnRightPossible = true;
-                this.driveRightGoStraightPossible = true;
-                this.driveRightTurnLeftPossible = true;
-                this.driveLeftGoStraightPossible = true;
-                this.driveLeftTurnLeftPossible = true;
-            }
-            case LEFT -> {
-                this.driveBotGoStraightPossible = true;
-                this.driveBotTurnRightPossible = true;
-                this.driveTopGoStraightPossible = true;
-                this.driveTopTurnLeftPossible = true;
-                this.driveLeftGoStraightPossible = true;
-                this.driveLeftTurnLeftPossible = true;
-
-
-            }
-            default -> { // RIGHT
-                this.driveBotGoStraightPossible = true;
-                this.driveBotTurnRightPossible = true;
-                this.driveRightGoStraightPossible = true;
-                this.driveRightTurnLeftPossible = true;
-                this.driveTopGoStraightPossible = true;
-                this.driveTopTurnLeftPossible = true;
-            }
+            crossroadLock.notifyAll();
         }
     }
 
-    public synchronized void blockForGoStraight(Location location) {
-        switch (location) {
-            case BOT -> {
-                this.driveBotTurnLeftPossible = false;
-                this.driveRightGoStraightPossible = false;
-                this.driveRightTurnLeftPossible = false;
-                this.driveRightTurnRightPossible = false;
-                this.driveLeftGoStraightPossible = false;
-                this.driveLeftTurnLeftPossible = false;
+    public synchronized void blockForGoStraight(Location location, Car c) {
+        synchronized (crossroadLock) {
+            switch (location) {
+                case BOT -> {
+                    this.ifEmptyDriveBotTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
+                }
+                case TOP -> {
+                    this.ifEmptyDriveTopTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
+                }
+                case LEFT -> {
+                    this.ifEmptyDriveBotTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveBotGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopTurnRightPossible.putIfAbsent(c.getId(), c);
+                }
+                default -> { // RIGHT
+                    this.ifEmptyDriveBotTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveBotGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveBotTurnRightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveTopTurnLeftPossible.putIfAbsent(c.getId(), c);
+                }
             }
-            case TOP -> {
-                this.driveTopTurnLeftPossible = false;
-                this.driveRightGoStraightPossible = false;
-                this.driveRightTurnLeftPossible = false;
-                this.driveRightTurnRightPossible = false;
-                this.driveLeftGoStraightPossible = false;
-                this.driveLeftTurnLeftPossible = false;
-            }
-            case LEFT -> {
-                this.driveBotTurnLeftPossible = false;
-                this.driveBotGoStraightPossible = false;
-                this.driveBotTurnRightPossible = false;
-                this.driveRightTurnLeftPossible = false;
-                this.driveTopGoStraightPossible = false;
-                this.driveTopTurnLeftPossible = false;
-            }
-            default -> { // RIGHT
-                this.driveBotTurnLeftPossible = false;
-                this.driveBotGoStraightPossible = false;
-                this.driveBotTurnRightPossible = false;
-                this.driveLeftTurnLeftPossible = false;
-                this.driveTopGoStraightPossible = false;
-                this.driveTopTurnLeftPossible = false;
-            }
+            crossroadLock.notifyAll();
         }
     }
 
-    public synchronized void unblockForGoStraight(Location location) {
-        switch (location) {
-            case BOT -> {
-                this.driveBotTurnLeftPossible = true;
-                this.driveRightGoStraightPossible = true;
-                this.driveRightTurnLeftPossible = true;
-                this.driveRightTurnRightPossible = true;
-                this.driveLeftGoStraightPossible = true;
-                this.driveLeftTurnLeftPossible = true;
+    public synchronized void unblockForGoStraight(Location location, Car c) {
+        synchronized (crossroadLock) {
+            switch (location) {
+                case BOT -> {
+                    this.ifEmptyDriveBotTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
+                }
+                case TOP -> {
+                    this.ifEmptyDriveTopTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
+                }
+                case LEFT -> {
+                    this.ifEmptyDriveBotTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveBotGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveTopGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveTopTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveTopTurnRightPossible.remove(c.getId());
+                }
+                default -> { // RIGHT
+                    this.ifEmptyDriveBotTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveBotGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveBotTurnRightPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveTopGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveTopTurnLeftPossible.remove(c.getId());
+                }
             }
-            case TOP -> {
-                this.driveTopTurnLeftPossible = true;
-                this.driveRightGoStraightPossible = true;
-                this.driveRightTurnLeftPossible = true;
-                this.driveRightTurnRightPossible = true;
-                this.driveLeftGoStraightPossible = true;
-                this.driveLeftTurnLeftPossible = true;
-            }
-            case LEFT -> {
-                this.driveBotTurnLeftPossible = true;
-                this.driveBotGoStraightPossible = true;
-                this.driveBotTurnRightPossible = true;
-                this.driveRightTurnLeftPossible = true;
-                this.driveTopGoStraightPossible = true;
-                this.driveTopTurnLeftPossible = true;
-            }
-            default -> { // RIGHT
-                this.driveBotTurnLeftPossible = true;
-                this.driveBotGoStraightPossible = true;
-                this.driveBotTurnRightPossible = true;
-                this.driveLeftTurnLeftPossible = true;
-                this.driveTopGoStraightPossible = true;
-                this.driveTopTurnLeftPossible = true;
-            }
+            crossroadLock.notifyAll();
         }
     }
 
-    public synchronized void blockForTurnRight(Location location) {
-        switch (location) {
-            case BOT -> {
-                this.driveBotTurnLeftPossible = false;
-                this.driveRightGoStraightPossible = false;
+    public synchronized void blockForTurnRight(Location location, Car c) {
+        synchronized (crossroadLock) {
+            switch (location) {
+                case BOT -> {
+                    this.ifEmptyDriveBotTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightGoStraightPossible.putIfAbsent(c.getId(), c);
+                }
+                case TOP -> {
+                    this.ifEmptyDriveTopTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftGoStraightPossible.putIfAbsent(c.getId(), c);
+                }
+                case LEFT -> {
+                    this.ifEmptyDriveBotGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
+                }
+                default -> { // RIGHT
+                    this.ifEmptyDriveTopGoStraightPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
+                }
             }
-            case TOP -> {
-                this.driveTopTurnLeftPossible = false;
-                this.driveLeftGoStraightPossible = false;
-            }
-            case LEFT -> {
-                this.driveBotGoStraightPossible = false;
-                this.driveRightTurnLeftPossible = false;
-            }
-            default -> { // RIGHT
-                this.driveTopGoStraightPossible = false;
-                this.driveLeftTurnLeftPossible = false;
-            }
+            crossroadLock.notifyAll();
         }
     }
 
-    public synchronized void unblockForTurnRight(Location location) {
-        switch (location) {
-            case BOT -> {
-                this.driveBotTurnLeftPossible = true;
-                this.driveRightGoStraightPossible = true;
+    public synchronized void unblockForTurnRight(Location location, Car c) {
+        synchronized (crossroadLock) {
+            switch (location) {
+                case BOT -> {
+                    this.ifEmptyDriveBotTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightGoStraightPossible.remove(c.getId());
+                }
+                case TOP -> {
+                    this.ifEmptyDriveTopTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftGoStraightPossible.remove(c.getId());
+                }
+                case LEFT -> {
+                    this.ifEmptyDriveBotGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
+                }
+                default -> { // RIGHT
+                    this.ifEmptyDriveTopGoStraightPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
+                }
             }
-            case TOP -> {
-                this.driveTopTurnLeftPossible = true;
-                this.driveLeftGoStraightPossible = true;
-            }
-            case LEFT -> {
-                this.driveBotGoStraightPossible = true;
-                this.driveRightTurnLeftPossible = true;
-            }
-            default -> { // RIGHT
-                this.driveTopGoStraightPossible = true;
-                this.driveLeftTurnLeftPossible = true;
-            }
+            crossroadLock.notifyAll();
         }
     }
 

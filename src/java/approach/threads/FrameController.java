@@ -1,6 +1,7 @@
 package approach.threads;
 
 import approach.threads.traffic.TrafficController;
+import approach.threads.utils.DriveDirection;
 import approach.threads.utils.Location;
 import approach.threads.utils.Spawner;
 
@@ -63,6 +64,7 @@ public class FrameController {
     private void spawnRandomCars(int num, TrafficController trafficController){
         new Thread(() -> {
             int n = num;
+            int idIt = 0;
             while (n > 0) {
                 Location loc = Spawner.getLocationFromRandomLocation();
                 if (loc == null) {
@@ -76,8 +78,8 @@ public class FrameController {
                     }
                     continue;
                 }
-                System.out.println("Respię samochodzik nr." + (num - n+1));
-                Car c = new Car(screen, loc, trafficController);
+//                System.out.println("Respię samochodzik nr." + (num - n+1));
+                Car c = new Car(screen, Spawner.getLocationFromRandomLocation(), trafficController, idIt++);
                 screen.appendCar(c);
                 Thread t = new Thread(c);
                 t.start();
@@ -87,6 +89,11 @@ public class FrameController {
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
+
+//                Car c2 = new Car(screen, Location.LEFT, trafficController, DriveDirection.STRAIGHT);
+//                screen.appendCar(c2);
+//                Thread t2 = new Thread(c2);
+//                t2.start();
             }
         }).start();
     }

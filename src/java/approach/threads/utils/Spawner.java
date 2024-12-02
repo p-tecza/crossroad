@@ -14,6 +14,8 @@ public class Spawner {
     public static Map<Location, CarLocationData> mapping = new HashMap<>();
 
     private static final Object carObjectsLock = new Object();
+    private static final Object crossroadLock = new Object();
+    private static final Object roadLock = new Object();
 
     static {
         mapping.put(Location.LEFT, new CarLocationData(0, 295, 1, 0, carWidth, carHeight));
@@ -24,6 +26,14 @@ public class Spawner {
 
     public static Object getCarObjectsLock() {
         return carObjectsLock;
+    }
+
+    public static Object getCrossroadLock() {
+        return crossroadLock;
+    }
+
+    public static Object getRoadLock(){
+        return roadLock;
     }
 
     public static CarLocationData getDataBasedOnLocation(Location l) {
@@ -69,6 +79,7 @@ public class Spawner {
     public static void removeCarFromCollection(Car c) {
         synchronized (carObjectsLock) {
             instantiatedCars.remove(c.hashCode());
+//            System.out.println("LEFTOVER CARS SIZE: "+ instantiatedCars.size());
         }
     }
 
@@ -85,8 +96,8 @@ public class Spawner {
                                     locationOk[0] = false;
 //                            System.out.println(Math.abs(locationData.getX() - c.carLocationData.getX()));
 //                            System.out.println(Math.abs(locationData.getY() - c.carLocationData.getY()));
-                                    System.out.println("LOC DATA:" + locationData.getX());
-                                    System.out.println("CAR DATA:" + c.carLocationData.getX());
+//                                    System.out.println("LOC DATA:" + locationData.getX());
+//                                    System.out.println("CAR DATA:" + c.carLocationData.getX());
 //                            System.out.println("NIE MA MIEJSCA");
                                 }
                             }
@@ -95,9 +106,10 @@ public class Spawner {
             }
             if (locationOk[0]) availableLocations.add(locationEntry);
         }
-        System.out.println("Ilosc dostepnych: " + availableLocations);
+//        System.out.println("Ilosc dostepnych: " + availableLocations);
         return availableLocations;
     }
 
+//    public static CarLocationData spawnInLocation
 
 }

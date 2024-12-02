@@ -13,6 +13,7 @@ import java.util.Map;
 
 public class Car implements Runnable {
 
+    private final int id;
     public CarLocationData carLocationData;
     private Location location;
     private final Color color;
@@ -31,6 +32,10 @@ public class Car implements Runnable {
     private final TrafficController trafficController;
     private final BlockedRoadHelper blockedRoadHelper;
 
+    private final Object crossroadLock = Spawner.getCrossroadLock();
+    private final Object roadLock = Spawner.getRoadLock();
+    private final static Object deadLockResolver = new Object();
+
     //    private Thread threadReference;
     private static final Map<DriveDirection, Color> colorMapping = new HashMap<>();
 
@@ -40,19 +45,17 @@ public class Car implements Runnable {
         colorMapping.put(DriveDirection.TURN_RIGHT, Color.ORANGE);
     }
 
-    public Car(AnimationScreen screen, Location location, TrafficController trafficController) {
+    public Car(AnimationScreen screen, Location location, TrafficController trafficController, int id) {
+        this.id = id;
         this.trafficController = trafficController;
         this.blockedRoadHelper = new BlockedRoadHelper(this.trafficController);
         this.location = location;
-//        this.location = Location.BOT;
-//        this.location = Location.TOP;
-//        this.location = Location.LEFT;
-//        this.location = Location.RIGHT;
         this.carLocationData = Spawner.getDataBasedOnLocation(this.location);
         this.driveDirection = Spawner.determineRandomDriveDirection();
-//        this.driveDirection = DriveDirection.TURN_RIGHT;
-//        this.driveDirection = DriveDirection.TURN_LEFT;
-//        this.driveDirection = DriveDirection.STRAIGHT;
+
+//        this.carLocationData = Spawner.getDataBasedOnLocation(location);
+//        this.driveDirection = deleteAfter;
+
         this.color = colorMapping.get(this.driveDirection);
         this.screen = screen;
         this.radianRotation = 0;
@@ -77,13 +80,17 @@ public class Car implements Runnable {
     @Override
     public void run() {
         while (!outOfMap()) {
-            synchronized (this) {
+            synchronized (crossroadLock) {
                 double x = carLocationData.getX();
                 double y = carLocationData.getY();
 
-                if(!this.blockedRoadHelper.checkIfCanRideThatRoad(this) && !enteredMiddle){
+                if (!this.blockedRoadHelper.checkIfCanRideThatRoad(this) && !enteredMiddle) {
                     try {
-                        wait();
+                        System.out.println(this.id + ". CZEKAM W KORKU");
+                        crossroadLock.wait();
+//                        wait();
+//                        Thread.sleep(100);
+                        System.out.println(this.id + ". JEDE W KORKU");
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -92,21 +99,29 @@ public class Car implements Runnable {
 
                 if (checkIfMiddleOfCrossroad() && !checkIfRidePossible(this.location, this.driveDirection) && !enteredMiddle) {
                     this.blockedRoadHelper.blockCorrespondingRoad(this);
-                    notifyAll();
+                    crossroadLock.notifyAll();
+//                    notifyAll();
                     try {
-                        wait();
+                        System.out.println(this.id + ". CZEKAM NA ZAKRET");
+                        crossroadLock.wait();
+//                        wait();
+//                        Thread.sleep(100);
+                        System.out.println(this.id + ". ZAKRECAM");
                     } catch (InterruptedException e) {
+//                        System.out.println("GOT NOTIFIED");
                         throw new RuntimeException(e);
                     }
                     continue;
                 }
                 Car laneOccupyingCar = this.trafficController.getOccupyingRoadCarByLocation(this.location);
-                if (laneOccupyingCar == this) {
+                calculateRadForTurn();
+                if (laneOccupyingCar == this && enteredMiddle) {
                     this.blockedRoadHelper.unblockCorrespondingRoad(this.location);
-                    notifyAll();
+//                    notifyAll();
+                    crossroadLock.notifyAll();
                 }
 
-                calculateRadForTurn();
+
                 screen.drawCar(x, y, carLocationData.getWidth(), carLocationData.getHeight(), color);
 
                 double xForceApplied;
@@ -150,7 +165,7 @@ public class Car implements Runnable {
         } else {
             if (checkIfMiddleOfCrossroad()) {
                 blockTrafficWhileMovingThroughMiddle(this.location, this.driveDirection);
-            } else {
+            } else if(this.enteredMiddle){
                 unblockTrafficAfterMovingThroughMiddle(this.location, this.driveDirection);
             }
         }
@@ -159,7 +174,7 @@ public class Car implements Runnable {
 
 
     private boolean prepareForTurn() {
-        blockTrafficWhileMovingThroughMiddle(this.location, this.driveDirection);
+        if(!this.turnFinished) blockTrafficWhileMovingThroughMiddle(this.location, this.driveDirection);
         this.turnStarted = true;
         if (Math.abs(this.radianRotationForTranslation - this.radianRotationForTranslationBuffer) >= 1.57079632) {
             this.turnFinished = true;
@@ -262,78 +277,116 @@ public class Car implements Runnable {
 //    }
 
     private void blockTrafficWhileMovingThroughMiddle(Location l, DriveDirection d) {
-        if (this.enteredMiddle) return;
-        this.enteredMiddle = true;
-        switch (d) {
-            case TURN_LEFT -> {
-                this.trafficController.blockForLeftTurn(l);
-            }
-            case TURN_RIGHT -> {
-                this.trafficController.blockForTurnRight(l);
-            }
-            default -> {
-                this.trafficController.blockForGoStraight(l);
+        synchronized (deadLockResolver) {
+            if (this.enteredMiddle) return;
+            System.out.println("BLOCKING: "+l +":"+d);
+            this.enteredMiddle = true;
+            switch (d) {
+                case TURN_LEFT -> {
+                    this.trafficController.blockForLeftTurn(l, this);
+                }
+                case TURN_RIGHT -> {
+                    this.trafficController.blockForTurnRight(l, this);
+                }
+                default -> {
+                    this.trafficController.blockForGoStraight(l, this);
+                }
             }
         }
-        notifyAll();
     }
 
     private void unblockTrafficAfterMovingThroughMiddle(Location l, DriveDirection d) {
-        if (this.exitedMiddle) return;
-        this.exitedMiddle = true;
-        switch (d) {
-            case TURN_LEFT -> {
-                this.trafficController.unblockForLeftTurn(l);
-            }
-            case TURN_RIGHT -> {
-                this.trafficController.unblockForTurnRight(l);
-            }
-            default -> {
-                this.trafficController.unblockForGoStraight(l);
+        synchronized (deadLockResolver) {
+            if (this.exitedMiddle) return;
+            System.out.println("UNBLOCKING: "+l +":"+d);
+            this.exitedMiddle = true;
+            switch (d) {
+                case TURN_LEFT -> {
+                    this.trafficController.unblockForLeftTurn(l, this);
+                }
+                case TURN_RIGHT -> {
+                    this.trafficController.unblockForTurnRight(l, this);
+                }
+                default -> {
+                    this.trafficController.unblockForGoStraight(l, this);
+                }
             }
         }
-        notifyAll();
     }
 
     private synchronized boolean checkIfRidePossible(Location location, DriveDirection driveDirection) {
+
+
+//        System.out.println("LOCATION: " + location + " DD: " + driveDirection);
         switch (location) {
             case LEFT -> {
                 if (driveDirection == DriveDirection.TURN_LEFT) {
-                    return this.trafficController.driveRightTurnLeftPossible;
+//                    System.out.println("LL:" + this.trafficController.ifEmptyDriveRightTurnLeftPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveRightTurnLeftPossible.isEmpty();
                 } else if (driveDirection == DriveDirection.TURN_RIGHT) {
-                    return this.trafficController.driveRightTurnRightPossible;
+//                    System.out.println("LR:" + this.trafficController.ifEmptyDriveRightTurnRightPossible.isEmpty());
+
+//                    if (!this.trafficController.ifEmptyDriveRightTurnRightPossible.isEmpty()) {
+//                        this.trafficController.ifEmptyDriveRightTurnRightPossible.keySet().stream().forEach(k ->
+//                                System.out.println(this.trafficController.ifEmptyDriveRightTurnRightPossible.get(k).getId())
+//                        );
+//                    }
+
+                    return this.trafficController.ifEmptyDriveRightTurnRightPossible.isEmpty();
                 } else {
-                    return this.trafficController.driveRightGoStraightPossible;
+//                    System.out.println("LF:" + this.trafficController.ifEmptyDriveRightGoStraightPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveRightGoStraightPossible.isEmpty();
                 }
             }
             case BOT -> {
                 if (driveDirection == DriveDirection.TURN_LEFT) {
-                    return this.trafficController.driveTopTurnLeftPossible;
+//                    System.out.println("BL:" + this.trafficController.ifEmptyDriveTopTurnLeftPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveTopTurnLeftPossible.isEmpty();
                 } else if (driveDirection == DriveDirection.TURN_RIGHT) {
-                    return this.trafficController.driveTopTurnRightPossible;
+//                    System.out.println("BR:" + this.trafficController.ifEmptyDriveTopTurnRightPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveTopTurnRightPossible.isEmpty();
                 } else {
-                    return this.trafficController.driveTopGoStraightPossible;
+//                    System.out.println("BF:" + this.trafficController.ifEmptyDriveTopGoStraightPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveTopGoStraightPossible.isEmpty();
                 }
             }
             case TOP -> {
                 if (driveDirection == DriveDirection.TURN_LEFT) {
-                    return this.trafficController.driveBotTurnLeftPossible;
+//                    System.out.println("TL:" + this.trafficController.ifEmptyDriveBotTurnLeftPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveBotTurnLeftPossible.isEmpty();
                 } else if (driveDirection == DriveDirection.TURN_RIGHT) {
-                    return this.trafficController.driveBotTurnRightPossible;
+//                    System.out.println("TR:" + this.trafficController.ifEmptyDriveBotTurnRightPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveBotTurnRightPossible.isEmpty();
                 } else {
-                    return this.trafficController.driveBotGoStraightPossible;
+//                    System.out.println("TF:" + this.trafficController.ifEmptyDriveBotGoStraightPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveBotGoStraightPossible.isEmpty();
                 }
             }
             default -> { // RIGHT
                 if (driveDirection == DriveDirection.TURN_LEFT) {
-                    return this.trafficController.driveLeftTurnLeftPossible;
+//                    System.out.println("RL:" + this.trafficController.ifEmptyDriveLeftTurnLeftPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveLeftTurnLeftPossible.isEmpty();
                 } else if (driveDirection == DriveDirection.TURN_RIGHT) {
-                    return this.trafficController.driveLeftTurnRightPossible;
+//                    System.out.println("RR:" + this.trafficController.ifEmptyDriveLeftTurnRightPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveLeftTurnRightPossible.isEmpty();
                 } else {
-                    return this.trafficController.driveLeftGoStraightPossible;
+//                    System.out.println("RF:" + this.trafficController.ifEmptyDriveLeftGoStraightPossible.isEmpty());
+                    return this.trafficController.ifEmptyDriveLeftGoStraightPossible.isEmpty();
                 }
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Car car = (Car) obj;
+        return car.id == this.id;
+    }
+
+    public int getId() {
+        return this.id;
     }
 
 }
