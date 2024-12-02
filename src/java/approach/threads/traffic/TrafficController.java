@@ -228,11 +228,11 @@ public class TrafficController {
                 }
                 case LEFT -> {
                     this.ifEmptyDriveBotGoStraightPossible.putIfAbsent(c.getId(), c);
-                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
                 }
                 default -> { // RIGHT
                     this.ifEmptyDriveTopGoStraightPossible.putIfAbsent(c.getId(), c);
-                    this.ifEmptyDriveLeftTurnLeftPossible.putIfAbsent(c.getId(), c);
+                    this.ifEmptyDriveRightTurnLeftPossible.putIfAbsent(c.getId(), c);
                 }
             }
             crossroadLock.notifyAll();
@@ -252,11 +252,11 @@ public class TrafficController {
                 }
                 case LEFT -> {
                     this.ifEmptyDriveBotGoStraightPossible.remove(c.getId());
-                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
                 }
                 default -> { // RIGHT
                     this.ifEmptyDriveTopGoStraightPossible.remove(c.getId());
-                    this.ifEmptyDriveLeftTurnLeftPossible.remove(c.getId());
+                    this.ifEmptyDriveRightTurnLeftPossible.remove(c.getId());
                 }
             }
             crossroadLock.notifyAll();
