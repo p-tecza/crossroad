@@ -1,21 +1,16 @@
 package approach.threads.utils;
 
-import approach.threads.AnimationScreen;
 import approach.threads.Car;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Spawner {
 
-    private static Map<Integer, Car> instantiatedCars = new HashMap<>();
+    private static final Map<Integer, Car> instantiatedCars = new HashMap<>();
     private static final int carWidth = 50;
     private static final int carHeight = 24;
     public static Map<Location, CarLocationData> mapping = new HashMap<>();
-
-//    private static final Object carObjectsLock = new Object();
     private static final Object crossroadLock = new Object();
-    private static final Object roadLock = new Object();
 
     static {
         mapping.put(Location.LEFT, new CarLocationData(0, 295, 1, 0, carWidth, carHeight));
@@ -24,16 +19,8 @@ public class Spawner {
         mapping.put(Location.BOT, new CarLocationData(405, 514, 0, -1, carHeight, carWidth));
     }
 
-//    public static Object getCarObjectsLock() {
-//        return carObjectsLock;
-//    }
-
     public static Object getCrossroadLock() {
         return crossroadLock;
-    }
-
-    public static Object getRoadLock(){
-        return roadLock;
     }
 
     public static CarLocationData getDataBasedOnLocation(Location l) {
@@ -79,7 +66,6 @@ public class Spawner {
     public static void removeCarFromCollection(Car c) {
         synchronized (crossroadLock) {
             instantiatedCars.remove(c.hashCode());
-//            System.out.println("LEFTOVER CARS SIZE: "+ instantiatedCars.size());
         }
     }
 
@@ -94,11 +80,6 @@ public class Spawner {
                                 if (Math.abs(locationData.getX() - c.carLocationData.getX()) < 75 &&
                                         Math.abs(locationData.getY() - c.carLocationData.getY()) < 75) {
                                     locationOk[0] = false;
-//                            System.out.println(Math.abs(locationData.getX() - c.carLocationData.getX()));
-//                            System.out.println(Math.abs(locationData.getY() - c.carLocationData.getY()));
-//                                    System.out.println("LOC DATA:" + locationData.getX());
-//                                    System.out.println("CAR DATA:" + c.carLocationData.getX());
-//                            System.out.println("NIE MA MIEJSCA");
                                 }
                             }
                         }
@@ -106,10 +87,6 @@ public class Spawner {
             }
             if (locationOk[0]) availableLocations.add(locationEntry);
         }
-//        System.out.println("Ilosc dostepnych: " + availableLocations);
         return availableLocations;
     }
-
-//    public static CarLocationData spawnInLocation
-
 }

@@ -23,7 +23,6 @@ public class BlockedRoadHelper {
     private final Set<Integer> alreadyBlockedCars = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public void blockCorrespondingRoad(Car c) {
-//        System.out.println(c.getColor() + " BLOCKING ROAD");
         synchronized (crossroadLock) {
             if (alreadyBlockedCars.contains(c.getId())) return;
             alreadyBlockedCars.add(c.getId());
@@ -56,7 +55,6 @@ public class BlockedRoadHelper {
     }
 
     public void unblockCorrespondingRoad(Car c) {
-//        System.out.println(location + " UNBLOCKING ROAD" );
         synchronized (crossroadLock) {
             if (alreadyUnblockedCars.contains(c.getId()) || !alreadyBlockedCars.contains(c.getId())) return;
             alreadyUnblockedCars.add(c.getId());
@@ -104,7 +102,6 @@ public class BlockedRoadHelper {
                     firstBlockingCar = this.trafficController.leftRoadBlockingCarsReference.peek();
                     lastBlockingCar = this.trafficController.leftRoadBlockingCarsReference.peekLast();
                     carQueueToAppendIfOccupied = this.trafficController.leftRoadBlockingCarsReference;
-//                System.out.println("LEFT ROAD BLOCK size: "+ this.trafficController.leftRoadBlockingCarsReference.size());
                 }
                 default -> { // RIGHT
                     firstBlockingCar = this.trafficController.rightRoadBlockingCarsReference.peek();
@@ -115,7 +112,7 @@ public class BlockedRoadHelper {
 
             if (firstBlockingCar == null || lastBlockingCar == null || firstBlockingCar.equals(c)) return true;
             boolean res = false;
-            if (!carQueueToAppendIfOccupied.contains(c)) { // TODO tu jest spieprzone na 100 procent
+            if (!carQueueToAppendIfOccupied.contains(c)) {
                 res = (Math.abs(lastBlockingCar.carLocationData.getX() - c.carLocationData.getX()) > 75
                         || Math.abs(lastBlockingCar.carLocationData.getY() - c.carLocationData.getY()) > 75);
                 if (!res) {
@@ -137,15 +134,10 @@ public class BlockedRoadHelper {
                 }
             }
 
-//        System.out.println("LEFT ROAD BLOCK size: "+ this.trafficController.leftRoadBlockingCarsReference.size());
-
             return res;
         }
     }
 
-    public boolean unblockedDoesNotAlreadyContain(int id) {
-        return !this.alreadyUnblockedCars.contains(id);
-    }
 
     public boolean lockedDoesNotAlreadyContain(int id) {
         return !this.alreadyBlockedCars.contains(id);

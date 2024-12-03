@@ -79,7 +79,7 @@ public class ExecutorFrameController {
                 Car c = new Car(screen, loc, trafficController, blockedRoadHelper, idIt++);
                 screen.appendCar(c);
 
-                threadPool.execute(c); // Zlecamy zadanie do puli wątków
+                threadPool.execute(c);
                 n--;
 
                 try {

@@ -15,28 +15,21 @@ public class Car implements Runnable {
 
     private final int id;
     public CarLocationData carLocationData;
-    private Location location;
+    private final Location location;
     private final Color color;
     private final AnimationScreen screen;
     private final DriveDirection driveDirection;
     private double radianRotation;
     private double radianRotationForTranslation;
-    private double radianRotationDx;
+    private final double radianRotationDx;
     private boolean turnStarted = false;
     private boolean turnFinished = false;
-
     private boolean enteredMiddle = false;
     private boolean exitedMiddle = false;
-    private double radianRotationForTranslationBuffer;
-
+    private final double radianRotationForTranslationBuffer;
     private final TrafficController trafficController;
     private final BlockedRoadHelper blockedRoadHelper;
-
     private final Object crossroadLock = Spawner.getCrossroadLock();
-    //    private final Object roadLock = Spawner.getRoadLock();
-    private final static Object deadLockResolver = new Object();
-
-    //    private Thread threadReference;
     private static final Map<DriveDirection, Color> colorMapping = new HashMap<>();
 
     static {
@@ -53,10 +46,6 @@ public class Car implements Runnable {
         this.location = location;
         this.carLocationData = Spawner.getDataBasedOnLocation(this.location);
         this.driveDirection = Spawner.determineRandomDriveDirection();
-
-//        this.carLocationData = Spawner.getDataBasedOnLocation(location);
-//        this.driveDirection = deleteAfter;
-
         this.color = colorMapping.get(this.driveDirection);
         this.screen = screen;
         this.radianRotation = 0;
@@ -64,10 +53,6 @@ public class Car implements Runnable {
         this.radianRotationForTranslationBuffer = this.radianRotationForTranslation;
         this.radianRotationDx = driveDirection == DriveDirection.TURN_LEFT ? .01 : 0.02;
         Spawner.addCarToCollection(this);
-    }
-
-    public DriveDirection getDriveDirection() {
-        return this.driveDirection;
     }
 
     public Location getLocation() {
@@ -87,11 +72,7 @@ public class Car implements Runnable {
 
                 if (!this.blockedRoadHelper.checkIfCanRideThatRoad(this) && !enteredMiddle) {
                     try {
-                        System.out.println(this.id + ". CZEKAM W KORKU");
                         crossroadLock.wait();
-//                        wait();
-//                        Thread.sleep(100);
-                        System.out.println(this.id + ". JEDE W KORKU");
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -99,34 +80,20 @@ public class Car implements Runnable {
                 }
 
                 if (checkIfMiddleOfCrossroad() && !checkIfRidePossible(this.location, this.driveDirection) && !enteredMiddle) {
-                    if(this.blockedRoadHelper.lockedDoesNotAlreadyContain(this.getId())){
+                    if (this.blockedRoadHelper.lockedDoesNotAlreadyContain(this.getId())) {
                         this.blockedRoadHelper.blockCorrespondingRoad(this);
                     }
 
                     crossroadLock.notifyAll();
-//                    notifyAll();
                     try {
-                        System.out.println(this.id + ". CZEKAM NA ZAKRET");
                         crossroadLock.wait();
-//                        wait();
-//                        Thread.sleep(100);
-                        System.out.println(this.id + ". ZAKRECAM");
                     } catch (InterruptedException e) {
-//                        System.out.println("GOT NOTIFIED");
                         throw new RuntimeException(e);
                     }
                     continue;
                 }
-//                Car laneOccupyingCar = this.trafficController.getOccupyingRoadCarByLocation(this.location);
+
                 calculateRadForTurn();
-//                if (laneOccupyingCar == this && enteredMiddle && !exitedMiddle) {
-//                    if(this.blockedRoadHelper.unblockedDoesNotAlreadyContain(this.getId())){
-//                        this.blockedRoadHelper.unblockCorrespondingRoad(this);
-//                    }
-////                    notifyAll();
-//                }
-
-
                 screen.drawCar(x, y, carLocationData.getWidth(), carLocationData.getHeight(), color);
 
                 double xForceApplied;
@@ -140,9 +107,6 @@ public class Car implements Runnable {
                 }
                 carLocationData.setX(xForceApplied);
                 carLocationData.setY(yForceApplied);
-
-//                System.out.println(this.carLocationData.getX());
-
             }
             try {
                 Thread.sleep(10);
@@ -277,14 +241,8 @@ public class Car implements Runnable {
                 || this.carLocationData.getY() > 700 || this.carLocationData.getY() < -100;
     }
 
-//    public void setThreadReference(Thread threadReference){
-//        this.threadReference = threadReference;
-//    }
-
     private void blockTrafficWhileMovingThroughMiddle(Location l, DriveDirection d) {
-//        synchronized (deadLockResolver) {
         if (this.enteredMiddle) return;
-        System.out.println("BLOCKING: " + l + ":" + d);
         this.enteredMiddle = true;
         switch (d) {
             case TURN_LEFT -> {
@@ -297,13 +255,10 @@ public class Car implements Runnable {
                 this.trafficController.blockForGoStraight(l, this);
             }
         }
-//        }
     }
 
     private void unblockTrafficAfterMovingThroughMiddle(Location l, DriveDirection d) {
-//        synchronized (deadLockResolver) {
         if (this.exitedMiddle) return;
-        System.out.println("UNBLOCKING: " + l + ":" + d);
         this.exitedMiddle = true;
         switch (d) {
             case TURN_LEFT -> {
@@ -316,7 +271,6 @@ public class Car implements Runnable {
                 this.trafficController.unblockForGoStraight(l, this);
             }
         }
-//        }
     }
 
     private boolean checkIfRidePossible(Location location, DriveDirection driveDirection) {
@@ -361,7 +315,7 @@ public class Car implements Runnable {
                     }
                 }
             }
-            if(res){
+            if (res) {
                 this.blockedRoadHelper.unblockCorrespondingRoad(this);
             }
             return res;
