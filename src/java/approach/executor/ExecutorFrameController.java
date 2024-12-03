@@ -90,12 +90,6 @@ public class ExecutorFrameController {
             }
         }).start();
     }
-
-    public void shutdown() {
-        threadPool.shutdown(); // Zamykamy pulę wątków, gdy już nie będziemy jej potrzebować
-    }
-
-
 }
 
 

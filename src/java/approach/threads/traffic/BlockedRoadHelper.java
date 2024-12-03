@@ -18,8 +18,6 @@ public class BlockedRoadHelper {
         this.trafficController = trafficController;
     }
 
-    private final Set<Integer> alreadyUnblockedCars = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
     private final Set<Integer> alreadyBlockedCars = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public void blockCorrespondingRoad(Car c) {
@@ -56,30 +54,30 @@ public class BlockedRoadHelper {
 
     public void unblockCorrespondingRoad(Car c) {
         synchronized (crossroadLock) {
-            if (alreadyUnblockedCars.contains(c.getId()) || !alreadyBlockedCars.contains(c.getId())) return;
-            alreadyUnblockedCars.add(c.getId());
+            Queue<Car> thisLocationQueue = this.getThisLocationBlockingCars(c.getLocation());
+            if (!thisLocationQueue.contains(c)) return;
+            thisLocationQueue.remove(c);
+            crossroadLock.notifyAll();
+        }
+    }
 
-            Location location = c.getLocation();
+    private Queue<Car> getThisLocationBlockingCars(Location location) {
+        Queue<Car> carQueue;
             switch (location) {
                 case TOP -> {
-                    if (this.trafficController.topRoadBlockingCarsReference.isEmpty()) return;
-                    this.trafficController.topRoadBlockingCarsReference.remove(c);
+                    carQueue = this.trafficController.topRoadBlockingCarsReference;
                 }
                 case BOT -> {
-                    if (this.trafficController.botRoadBlockingCarsReference.isEmpty()) return;
-                    this.trafficController.botRoadBlockingCarsReference.remove(c);
+                    carQueue = this.trafficController.botRoadBlockingCarsReference;
                 }
                 case LEFT -> {
-                    if (this.trafficController.leftRoadBlockingCarsReference.isEmpty()) return;
-                    this.trafficController.leftRoadBlockingCarsReference.remove(c);
+                    carQueue = this.trafficController.leftRoadBlockingCarsReference;
                 }
                 default -> { // RIGHT
-                    if (this.trafficController.rightRoadBlockingCarsReference.isEmpty()) return;
-                    this.trafficController.rightRoadBlockingCarsReference.remove(c);
+                    carQueue = this.trafficController.rightRoadBlockingCarsReference;
                 }
             }
-        }
-        crossroadLock.notifyAll();
+            return carQueue;
     }
 
     public boolean checkIfCanRideThatRoad(Car c) {
@@ -137,10 +135,4 @@ public class BlockedRoadHelper {
             return res;
         }
     }
-
-
-    public boolean lockedDoesNotAlreadyContain(int id) {
-        return !this.alreadyBlockedCars.contains(id);
-    }
-
 }

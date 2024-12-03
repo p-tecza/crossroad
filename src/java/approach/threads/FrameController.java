@@ -2,18 +2,12 @@ package approach.threads;
 
 import approach.threads.traffic.BlockedRoadHelper;
 import approach.threads.traffic.TrafficController;
-import approach.threads.utils.DriveDirection;
 import approach.threads.utils.Location;
 import approach.threads.utils.Spawner;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.*;
-
-import static java.lang.Math.*;
 
 
 public class FrameController {

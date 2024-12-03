@@ -26,6 +26,7 @@ public class Car implements Runnable {
     private boolean turnFinished = false;
     private boolean enteredMiddle = false;
     private boolean exitedMiddle = false;
+    private boolean notifiedDrivingThroughMiddle = false;
     private final double radianRotationForTranslationBuffer;
     private final TrafficController trafficController;
     private final BlockedRoadHelper blockedRoadHelper;
@@ -65,6 +66,7 @@ public class Car implements Runnable {
 
     @Override
     public void run() {
+        this.blockedRoadHelper.blockCorrespondingRoad(this);
         while (!outOfMap()) {
             synchronized (crossroadLock) {
                 double x = carLocationData.getX();
@@ -80,10 +82,10 @@ public class Car implements Runnable {
                 }
 
                 if (checkIfMiddleOfCrossroad() && !checkIfRidePossible(this.location, this.driveDirection) && !enteredMiddle) {
-                    if (this.blockedRoadHelper.lockedDoesNotAlreadyContain(this.getId())) {
-                        this.blockedRoadHelper.blockCorrespondingRoad(this);
-                    }
 
+//                    if(!this.blockedRoadHelper.checkIfThisCarIsPeekCarFromThisRoadQueue(this)){
+//                        continue;
+//                    }
                     crossroadLock.notifyAll();
                     try {
                         crossroadLock.wait();
@@ -121,18 +123,30 @@ public class Car implements Runnable {
     private void calculateRadForTurn() {
         if (this.driveDirection == DriveDirection.TURN_RIGHT) {
             if ((checkIfMiddleOfCrossroad() || turnStarted) && !turnFinished) {
+                if (!notifiedDrivingThroughMiddle) {
+                    crossroadLock.notifyAll();
+                    notifiedDrivingThroughMiddle = true;
+                }
                 if (prepareForTurn()) return;
                 this.radianRotation += radianRotationDx;
                 this.radianRotationForTranslation += radianRotationDx;
             }
         } else if (this.driveDirection == DriveDirection.TURN_LEFT) {
             if ((checkIfMiddleOfCrossroad() || turnStarted) && !turnFinished) {
+                if (!notifiedDrivingThroughMiddle) {
+                    crossroadLock.notifyAll();
+                    notifiedDrivingThroughMiddle = true;
+                }
                 if (prepareForTurn()) return;
                 this.radianRotation -= radianRotationDx;
                 this.radianRotationForTranslation -= radianRotationDx;
             }
         } else {
             if (checkIfMiddleOfCrossroad()) {
+                if (!notifiedDrivingThroughMiddle) {
+                    crossroadLock.notifyAll();
+                    notifiedDrivingThroughMiddle = true;
+                }
                 blockTrafficWhileMovingThroughMiddle(this.location, this.driveDirection);
             } else if (this.enteredMiddle) {
                 unblockTrafficAfterMovingThroughMiddle(this.location, this.driveDirection);
