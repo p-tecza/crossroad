@@ -15,7 +15,6 @@ public class AnimationScreen extends JPanel {
     private Graphics2D graphics;
     private final Rectangle2D.Double carRectangle;
     private final List<Car> cars;
-
     private final Object crossroadLock;
     public AnimationScreen(Object crossroadLock) {
         carRectangle = new Rectangle2D.Double();

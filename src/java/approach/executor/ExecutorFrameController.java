@@ -1,32 +1,29 @@
-package approach.threads;
+package approach.executor;
 
+import approach.threads.AnimationScreen;
+import approach.threads.Car;
 import approach.threads.traffic.BlockedRoadHelper;
 import approach.threads.traffic.TrafficController;
-import approach.threads.utils.DriveDirection;
 import approach.threads.utils.Location;
 import approach.threads.utils.Spawner;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import static java.lang.Math.*;
 
-
-public class FrameController {
+public class ExecutorFrameController {
 
     private JFrame frame;
-    private Queue<Car> cars;
-    private Queue<ScheduledFuture<?>> bulletsHandles;
-    private ScheduledExecutorService animationExecutor;
     private final AnimationScreen screen;
-    private int nBullets;
-    private boolean animationPaused;
+    private final ExecutorService threadPool = Executors.newCachedThreadPool();
 
-    public FrameController() {
+    public ExecutorFrameController() {
         frame = new JFrame("Crossroad");
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -63,46 +60,43 @@ public class FrameController {
         spawnRandomCars(32, trafficController, blockedRoadHelper);
     }
 
-
-    private void spawnRandomCars(int num, TrafficController trafficController, BlockedRoadHelper blockedRoadHelper){
+    public void spawnRandomCars(int num, TrafficController trafficController, BlockedRoadHelper blockedRoadHelper) {
         new Thread(() -> {
             int n = num;
             int idIt = 0;
+
             while (n > 0) {
                 Location loc = Spawner.getLocationFromRandomLocation();
                 if (loc == null) {
                     try {
-//                        System.out.println("LOC JEST NULL, czekamy");
-//                        Thread.sleep(new Random().nextInt(1000, 2000));
                         Thread.sleep(300);
-//                        System.out.println("LECIMY");
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                     continue;
                 }
-//                System.out.println("Respię samochodzik nr." + (num - n+1));
+
                 Car c = new Car(screen, loc, trafficController, blockedRoadHelper, idIt++);
                 screen.appendCar(c);
 
-
-                Thread t = new Thread(c);
-                t.start();
+                threadPool.execute(c); // Zlecamy zadanie do puli wątków
                 n--;
+
                 try {
                     Thread.sleep(num - 4 <= n ? 150 : 400);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-
-//                Car c2 = new Car(screen, Location.LEFT, trafficController, DriveDirection.STRAIGHT);
-//                screen.appendCar(c2);
-//                Thread t2 = new Thread(c2);
-//                t2.start();
             }
         }).start();
     }
 
+    public void shutdown() {
+        threadPool.shutdown(); // Zamykamy pulę wątków, gdy już nie będziemy jej potrzebować
+    }
+
+
 }
+
 
 
